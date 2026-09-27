@@ -94,6 +94,10 @@ struct HistoryCommand: ParsableCommand {
             if let v = m.text { dict["text"] = v }
             if let v = m.attachment, !v.isEmpty { dict["attachment"] = v }
             if let v = m.localFilePath, !v.isEmpty { dict["local_file_path"] = v }
+            if let v = m.reactions, !v.isEmpty { dict["reactions"] = v }
+            if let v = m.myReaction, !v.isEmpty { dict["my_reaction"] = v }
+            if let v = m.emoticonReactions, !v.isEmpty { dict["emoticon_reactions"] = v }
+            if let v = m.myEmoticonReactions, !v.isEmpty { dict["my_emoticon_reactions"] = v }
             return dict
         }
         JSONOutput.printArray(items)

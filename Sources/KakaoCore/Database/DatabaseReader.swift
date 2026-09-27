@@ -314,8 +314,13 @@ public final class DatabaseReader: @unchecked Sendable {
             SELECT m.logId, m.chatId, m.authorId,
                    (SELECT COALESCE(NULLIF(u.displayName, ''), NULLIF(u.friendNickName, ''), NULLIF(u.nickName, ''))
                       FROM NTUser u WHERE u.userId = m.authorId ORDER BY u.linkId LIMIT 1),
-                   m.message, m.type, m.sentAt, m.attachment, m.localFilePath
+                   m.message, m.type, m.sentAt, m.attachment, m.localFilePath,
+                   rx.content, rx.extra, erx.content, erx.extra
             FROM NTChatMessage m
+            LEFT JOIN NTChatLogMeta rx
+                   ON rx.chatId = m.chatId AND rx.logId = m.logId AND rx.type = 1
+            LEFT JOIN NTChatLogMeta erx
+                   ON erx.chatId = m.chatId AND erx.logId = m.logId AND erx.type = 2
             \(where_)
             ORDER BY m.sentAt \(direction), m.logId \(direction)
             LIMIT ?
@@ -334,6 +339,10 @@ public final class DatabaseReader: @unchecked Sendable {
                 sentAt: row.int64(6),
                 attachment: row.string(7),
                 localFilePath: row.string(8),
+                reactions: row.string(9),
+                myReaction: row.string(10),
+                emoticonReactions: row.string(11),
+                myEmoticonReactions: row.string(12),
                 isFromMe: row.int64(2) == myUserId
             )
         }

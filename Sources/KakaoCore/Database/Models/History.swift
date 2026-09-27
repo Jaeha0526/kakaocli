@@ -49,6 +49,14 @@ public struct HistoryMessage: Sendable {
     /// Raw attachment JSON as stored by KakaoTalk, if any.
     public let attachment: String?
     public let localFilePath: String?
+    /// Raw NTChatLogMeta JSON (type 1): standard reaction counts, e.g. {"2":1}.
+    public let reactions: String?
+    /// Raw NTChatLogMeta extra (type 1): includes "my", the user's own reaction code (0 = none).
+    public let myReaction: String?
+    /// Raw NTChatLogMeta JSON (type 2): emoticon reactions, {"rx":[{"o":…,"c":…,"a":{"ko":…}}]}.
+    public let emoticonReactions: String?
+    /// Raw NTChatLogMeta extra (type 2): {"myRx":[…]}, the user's own emoticon reactions.
+    public let myEmoticonReactions: String?
     public let isFromMe: Bool
 
     public var cursor: MessageCursor { MessageCursor(sentAt: sentAt, logId: logId) }
