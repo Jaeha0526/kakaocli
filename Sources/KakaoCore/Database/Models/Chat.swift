@@ -14,6 +14,8 @@ public struct Chat: Sendable {
         case direct = "direct"
         case group = "group"
         case openChat = "open"
+        /// The user's own memo chat (나와의 채팅).
+        case selfChat = "self"
         case unknown = "unknown"
     }
 }

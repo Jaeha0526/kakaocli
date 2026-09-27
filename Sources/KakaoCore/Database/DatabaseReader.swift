@@ -125,7 +125,9 @@ public final class DatabaseReader: @unchecked Sendable {
     /// not a chat, and the app doesn't list it either.
     public func chats(limit: Int = 50) throws -> [Chat] {
         let users = try userNames()
-        let me = Int64((try? DeviceInfo.userId()) ?? 0)
+        // From the DB, not DeviceInfo.userId(): that can brute-force a SHA-512
+        // pre-image for minutes, and this runs on every `chats` call.
+        let me = (try? myUserId()) ?? 0
         let sql = """
             SELECT r.chatId, r.type, r.chatName, r.activeMembersCount,
                    r.lastLogId, r.lastUpdatedAt, r.countOfNewMessage,
@@ -150,7 +152,8 @@ public final class DatabaseReader: @unchecked Sendable {
                     directPartner: row.string(7) ?? row.string(8) ?? row.string(9),
                     memberIds: row.blob(12),
                     users: users,
-                    selfUserId: me
+                    selfUserId: me,
+                    isSelfChat: row.int(1) == 5
                 ),
                 memberCount: row.int(3),
                 lastMessageId: row.optionalInt64(4),
@@ -168,7 +171,8 @@ public final class DatabaseReader: @unchecked Sendable {
         directPartner: String?,
         memberIds: Data?,
         users: [Int64: String],
-        selfUserId: Int64
+        selfUserId: Int64,
+        isSelfChat: Bool = false
     ) -> String {
         for candidate in [chatName, metaTitle, linkName, directPartner] {
             if let candidate, !candidate.isEmpty { return candidate }
@@ -176,6 +180,11 @@ public final class DatabaseReader: @unchecked Sendable {
         if let memberIds, let ids = decodeMemberIds(memberIds) {
             let names = ids.filter { $0 != selfUserId }.sorted().compactMap { users[$0] }
             if !names.isEmpty { return names.joined(separator: ", ") }
+        }
+        // The self-chat (나와의 채팅, NTChatRoom.type 5) has an empty member
+        // list; KakaoTalk lists it under the user's own name.
+        if isSelfChat, let own = users[selfUserId] {
+            return own
         }
         return "(unknown)"
     }
@@ -537,6 +546,7 @@ extension Chat.ChatType {
         switch rawInt {
         case 0: return .direct
         case 1: return .group
+        case 5: return .selfChat
         default: return .unknown
         }
     }
