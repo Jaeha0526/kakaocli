@@ -233,7 +233,6 @@ public enum DeviceInfo {
             var hash = [UInt8](repeating: 0, count: Int(CC_SHA512_DIGEST_LENGTH))
             var i = lo
             while i < hi {
-                if result.stopped { return }
                 let s = String(i)
                 let data = Array(s.utf8)
                 CC_SHA512(data, CC_LONG(data.count), &hash)
@@ -241,8 +240,10 @@ public enum DeviceInfo {
                     result.record(i)
                     return
                 }
-                // Cheap periodic timeout / cancellation check.
-                if i & 0x3F_FFFF == 0 && i > lo {
+                // Check the shared stop flag and the deadline only every 64K
+                // hashes: taking the lock on every iteration serialises workers.
+                if i & 0xFFFF == 0 {
+                    if result.stopped { return }
                     if CFAbsoluteTimeGetCurrent() - startTime > timeoutSeconds {
                         result.stop()
                         return
